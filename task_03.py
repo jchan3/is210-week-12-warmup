@@ -7,25 +7,45 @@ import time
 
 
 class CustomLogger(object):
+    """A CustomLogger object."""
 
     def __init__(self, logfilename):
         self.logfilename = logfilename
         self.msgs = []
 
     def log(self, msg, timestamp=None):
+        """A log function."""
         if timestamp is None:
             timestamp = time.time()
         self.msgs.append((timestamp, msg))
 
     def flush(self):
+        """A flush function."""
         handled = []
 
-        fhandler = open(self.logfilename, 'a')
-        for index, entry in enumerate(self.msgs):
-            fhandler.write(str(entry) + '\n')
-            handled.append(index)
+        try:
+            fhandler = open(self.logfilename, 'a')
+        except IOError:
+            self.log(IOError)
+            raise IOError
 
-        fhandler.close()
+        try:
+            for index, entry in enumerate(self.msgs):
+                try:
+                    fhandler.write(str(entry) + '\n')
+                except IOError:
+                    self.log(IOError)
+                    break
+                else:
+                    handled.append(index)
+        finally:
+            fhandler.close()
 
-        for index in handled[::-1]:
-            del self.msgs[index]
+        if handled != []:
+            for index in handled[::-1]:
+                try:
+                    del self.msgs[index]
+                except IOError:
+                    break
+                except StandardError:
+                    self.log(StandardError)
